@@ -23,6 +23,11 @@ type Row = {
   consumption: number | null
 }
 
+type WeatherRow = {
+  monthKey: string
+  windSpeedKmh: number
+}
+
 function parseCsv(content: string): Row[] {
   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0)
   if (lines.length < 2) throw new Error('CSV empty or missing header')
@@ -51,9 +56,31 @@ function parseCsv(content: string): Row[] {
   return rows
 }
 
+function parseWeatherCsv(content: string): WeatherRow[] {
+  const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0)
+  if (lines.length < 2) throw new Error('Weather CSV empty or missing header')
+
+  const rows: WeatherRow[] = []
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i]!.split(',')
+    if (cols.length < 5) continue
+    const year = Number.parseInt(cols[0]!.trim(), 10)
+    const month = Number.parseInt(cols[1]!.trim(), 10)
+    const windSpeedKmh = Number.parseFloat(cols[4]!.trim())
+    if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) continue
+    if (!Number.isFinite(windSpeedKmh)) continue
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`
+    rows.push({ monthKey, windSpeedKmh })
+  }
+  return rows
+}
+
 function main() {
   const raw = readFileSync(csvPath, 'utf8')
+  const weatherPath = join(repoRoot, 'Prediction Visualizer', 'Eric D. Soulis.csv')
+  const weatherRaw = readFileSync(weatherPath, 'utf8')
   const parsed = parseCsv(raw)
+  const weatherParsed = parseWeatherCsv(weatherRaw)
 
   const monthSet = new Set<string>()
   const codes = new Set<string>()
@@ -96,12 +123,51 @@ function main() {
   })
   buildings[CAMPUS_TOTAL_KEY] = campusTotal
 
-  const payload = { months, buildings }
+  const weatherByMonth = new Map<string, { sum: number; count: number }>()
+  for (const row of weatherParsed) {
+    const cur = weatherByMonth.get(row.monthKey)
+    if (!cur) {
+      weatherByMonth.set(row.monthKey, { sum: row.windSpeedKmh, count: 1 })
+    } else {
+      cur.sum += row.windSpeedKmh
+      cur.count += 1
+    }
+  }
+
+  const monthlyAvgWindKmh: (number | null)[] = months.map((monthKey) => {
+    const agg = weatherByMonth.get(monthKey)
+    if (!agg || agg.count === 0) return null
+    return agg.sum / agg.count
+  })
+
+  const monthlyPowerProxy = monthlyAvgWindKmh.map((v) => {
+    if (v === null || !Number.isFinite(v) || v < 0) return null
+    const ms = v / 3.6
+    return ms ** 3
+  })
+  const proxyVals = monthlyPowerProxy.filter((v): v is number => v !== null && Number.isFinite(v))
+  const proxyMean =
+    proxyVals.length > 0 ? proxyVals.reduce((a, b) => a + b, 0) / proxyVals.length : 1
+  const monthlyEfficiency: (number | null)[] = monthlyPowerProxy.map((v) => {
+    if (v === null) return null
+    return proxyMean > 0 ? v / proxyMean : 1
+  })
+
+  const payload = {
+    months,
+    buildings,
+    weather: {
+      source: 'Prediction Visualizer/Eric D. Soulis.csv',
+      speedUnit: 'km/h',
+      monthlyAvgWindKmh,
+      monthlyEfficiency,
+    },
+  }
 
   mkdirSync(outDir, { recursive: true })
   writeFileSync(outFile, JSON.stringify(payload, null, 0), 'utf8')
   console.log(
-    `Wrote ${outFile} (${months.length} months, ${codes.size} source buildings + ${CAMPUS_TOTAL_KEY})`,
+    `Wrote ${outFile} (${months.length} months, ${codes.size} source buildings + ${CAMPUS_TOTAL_KEY}, weather months matched: ${monthlyAvgWindKmh.filter((v) => v !== null).length})`,
   )
 }
 

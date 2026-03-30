@@ -58,6 +58,16 @@ function App() {
     return data.buildings[CAMPUS_TOTAL_KEY] ?? []
   }, [data])
 
+  const weatherEfficiencySeries = useMemo(() => {
+    if (!data) return []
+    return data.weather?.monthlyEfficiency ?? data.months.map(() => null)
+  }, [data])
+
+  const weatherSpeedSeries = useMemo(() => {
+    if (!data) return []
+    return data.weather?.monthlyAvgWindKmh ?? data.months.map(() => null)
+  }, [data])
+
   const stats = useMemo(() => seriesTotalKwh(selectedSeries), [selectedSeries])
   const avg =
     stats.count > 0 ? stats.sum / stats.count : 0
@@ -65,8 +75,8 @@ function App() {
   if (loadError) {
     return (
       <div className="app-shell">
-        <header className="header">
-          <h1>Campus electricity</h1>
+        <header className="header header--simple">
+          <h1>UWaterloo Energy Dashboard</h1>
         </header>
         <main className="main">
           <div className="card error-card">
@@ -84,8 +94,8 @@ function App() {
   if (!data) {
     return (
       <div className="app-shell">
-        <header className="header">
-          <h1>Campus electricity</h1>
+        <header className="header header--simple">
+          <h1>UWaterloo Energy Dashboard</h1>
         </header>
         <main className="main">
           <p className="muted">Loading data…</p>
@@ -96,17 +106,39 @@ function App() {
 
   return (
     <div className="app-shell">
+      <header className="brand-strip">
+        <div className="brand-strip-inner">
+          <div className="brand-logo" aria-hidden="true">
+            UW
+          </div>
+          <div>
+            <div className="brand-kicker">University of Waterloo inspired</div>
+            <h1 className="brand-title">Campus Energy and Wind Impact</h1>
+          </div>
+        </div>
+      </header>
+
+      <section className="hero">
+        <div className="hero-content">
+          <h2>Understand campus demand and on-site wind potential</h2>
+          <p>
+            Monthly use by building from 2015–2024. <code>{CAMPUS_TOTAL_KEY}</code> represents the
+            full campus sum in the dataset, and wind performance uses weather-derived efficiency.
+          </p>
+        </div>
+      </section>
+
       <header className="header">
-        <h1>Campus electricity</h1>
-        <p className="subtitle">
-          Monthly use by building (2015–2024). <code>{CAMPUS_TOTAL_KEY}</code> is the sum of all
-          buildings in the CSV each month—not the same as UWP alone.
-        </p>
+        <nav className="quick-nav" aria-label="Dashboard sections">
+          <span>Campus consumption</span>
+          <span>Wind impact</span>
+          <span>Weather efficiency overlay</span>
+        </nav>
       </header>
 
       <main className="main">
         <section className="card card-consumption">
-          <h2 className="card-title">Consumption</h2>
+          <h2 className="card-title">Campus Consumption</h2>
           <div className="toolbar">
             <BuildingSelector
               id="building-select"
@@ -141,12 +173,18 @@ function App() {
         </section>
 
         <ErrorBoundary>
-          <WindFarmPredictor months={data.months} campusConsumption={campusSeries} />
+          <WindFarmPredictor
+            months={data.months}
+            campusConsumption={campusSeries}
+            monthlyWeatherEfficiency={weatherEfficiencySeries}
+            monthlyAvgWindKmh={weatherSpeedSeries}
+          />
         </ErrorBoundary>
       </main>
 
       <footer className="footer muted">
-        Source CSV → <code>web/public/data/buildingMonthly.json</code> (<code>npm run build:data</code>)
+        Source CSVs build into <code>web/public/data/buildingMonthly.json</code> using{' '}
+        <code>npm run build:data</code>.
       </footer>
     </div>
   )

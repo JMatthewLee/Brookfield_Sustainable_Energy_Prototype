@@ -24,6 +24,8 @@ export function MonthlyConsumptionChart({ months, series, title }: Props) {
           type: 'scatter',
           mode: 'lines+markers',
           name: 'Consumption',
+          line: { width: 3, color: '#2563eb' },
+          marker: { size: 5, color: '#2563eb' },
           connectgaps: false,
           customdata,
           hovertemplate:
@@ -31,13 +33,19 @@ export function MonthlyConsumptionChart({ months, series, title }: Props) {
         },
       ]}
       layout={{
-        title: { text: title },
-        xaxis: { title: { text: 'Month' } },
-        yaxis: { title: { text: 'Electricity (kWh)' } },
+        title: { text: title, font: { size: 14 } },
+        xaxis: { title: { text: 'Month' }, gridcolor: '#e2e8f0' },
+        yaxis: {
+          title: { text: 'Electricity consumption (kWh)' },
+          tickformat: ',.0f',
+          gridcolor: '#e2e8f0',
+        },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
         autosize: true,
         margin: { t: 48, r: 24, l: 56, b: 80 },
+        legend: { orientation: 'h' as const, y: 1.08, x: 0, font: { size: 11, color: '#334155' } },
+        font: { color: '#334155' },
         hovermode: 'closest' as const,
       }}
       config={{

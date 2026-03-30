@@ -2,6 +2,12 @@
 export type BuildingMonthlyPayload = {
   months: string[]
   buildings: Record<string, (number | null)[]>
+  weather?: {
+    source: string
+    speedUnit: 'km/h'
+    monthlyAvgWindKmh: (number | null)[]
+    monthlyEfficiency: (number | null)[]
+  }
 }
 
 /** Synthetic series: sum of all building codes in the CSV for each month. */
