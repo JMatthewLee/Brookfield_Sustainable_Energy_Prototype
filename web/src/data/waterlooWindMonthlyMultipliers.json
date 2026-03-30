@@ -1,0 +1,7 @@
+{
+  "source": "Illustrative relative monthly indices (Jan–Dec), winter-peaked inland Ontario style; normalized to annual mean 1. Replace with factors from Environment Canada / your historical Waterloo, ON met data when available.",
+  "factors": [
+    1.140496, 1.110744, 1.071074, 1.01157, 0.932231, 0.872727, 0.843025, 0.872727,
+    0.912397, 1.01157, 1.071074, 1.150413
+  ]
+}
